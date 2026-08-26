@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>装机配置单生成器</title>
 <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #0d1117;
@@ -331,6 +332,81 @@
     color: var(--text-muted);
     font-size: 13px;
   }
+
+  /* Excel Importer */
+  .excel-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg-2);
+  }
+  .excel-upload-area:hover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .excel-upload-area.dragover {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .excel-preview-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .excel-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .excel-preview-table th {
+    background: var(--bg-3);
+    padding: 8px 10px;
+    text-align: left;
+    color: var(--text-dim);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+  }
+  .excel-preview-table th.name-col { background: var(--accent-glow); color: var(--accent); }
+  .excel-preview-table th.price-col { background: var(--accent-glow); color: var(--accent); }
+  .excel-preview-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .excel-match-list {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .excel-match-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    font-size: 13px;
+  }
+  .excel-match-item:last-child { border-bottom: none; }
+  .excel-match-item .match-name { flex: 1; color: var(--text); }
+  .excel-match-item .match-old { color: var(--text-muted); text-decoration: line-through; }
+  .excel-match-item .match-arrow { color: var(--text-muted); }
+  .excel-match-item .match-new { color: var(--green); font-weight: 600; }
+  .excel-match-item.unmatched { opacity: 0.5; }
+  .excel-match-item.unmatched .match-name { color: var(--text-muted); }
+  .excel-match-item.unmatched .match-status { color: var(--red); font-size: 11px; }
 
   /* ===== Main Layout ===== */
   .app-main {
@@ -1038,6 +1114,10 @@
       <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
       价格管理
     </button>
+    <button class="price-manage-btn" onclick="openExcelImporter()">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      导入Excel
+    </button>
     <span class="price-note">价格可自定义</span>
   </div>
 </header>
@@ -1161,6 +1241,63 @@
   </div>
 </div>
 
+<!-- Excel Importer Modal -->
+<div class="pm-modal" id="excelImporter">
+  <div class="pm-container" style="max-width: 900px;">
+    <div class="pm-header">
+      <div>
+        <div class="pm-title">导入Excel报价单</div>
+        <div class="pm-subtitle">上传xlsx文件，选择型号列和价格列，自动匹配更新数据库价格</div>
+      </div>
+      <button class="pm-close" onclick="closeExcelImporter()">&times;</button>
+    </div>
+    <div class="pm-body" style="max-height: 65vh;">
+      <!-- Step 1: Upload -->
+      <div id="excelStep1">
+        <div class="excel-upload-area" id="excelUploadArea" onclick="document.getElementById('excelFileInput').click()">
+          <svg viewBox="0 0 24 24" style="width:48px;height:48px;fill:var(--text-muted);margin-bottom:12px;"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          <div style="font-size:16px;color:var(--text);margin-bottom:6px;">点击或拖拽 Excel 文件到此处</div>
+          <div style="font-size:13px;color:var(--text-muted);">支持 .xlsx / .xls 格式</div>
+        </div>
+        <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleExcelFile(event)">
+      </div>
+
+      <!-- Step 2: Configure -->
+      <div id="excelStep2" style="display:none;">
+        <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">选择 Sheet</div>
+            <select id="excelSheetSelect" class="pm-input" onchange="onSheetChange()" style="width:100%;"></select>
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">型号所在列</div>
+            <select id="excelNameCol" class="pm-input" onchange="renderExcelPreview()" style="width:100%;"></select>
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:13px;color:var(--text-dim);margin-bottom:6px;">价格所在列</div>
+            <select id="excelPriceCol" class="pm-input" onchange="renderExcelPreview()" style="width:100%;"></select>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">数据预览（前10行）：</div>
+        <div class="excel-preview-wrap" id="excelPreview"></div>
+        <div style="margin-top:16px;text-align:right;">
+          <button class="pm-btn pm-btn-primary" onclick="previewExcelMatch()">预览匹配结果</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Match Results -->
+      <div id="excelStep3" style="display:none;">
+        <div id="excelMatchSummary" style="margin-bottom:16px;padding:12px 16px;background:var(--bg-3);border-radius:8px;font-size:14px;"></div>
+        <div class="excel-match-list" id="excelMatchList"></div>
+        <div style="margin-top:16px;display:flex;justify-content:space-between;gap:12px;">
+          <button class="pm-btn pm-btn-secondary" onclick="backToExcelStep2()">返回调整</button>
+          <button class="pm-btn pm-btn-primary" onclick="applyExcelImport()">确认导入更新</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -1220,16 +1357,6 @@ const DB = {
     // NVIDIA
     { id: 'gtx1650', name: 'NVIDIA GTX 1650', brand: 'nvidia', price: 450, vram: 4, tdp: 75, tier: 'entry', perf: 20 },
     { id: 'rtx3050', name: 'NVIDIA RTX 3050', brand: 'nvidia', price: 1600, vram: 8, tdp: 130, tier: 'entry', perf: 30 },
-    { id: 'rtx4060', name: 'NVIDIA RTX 4060', brand: 'nvidia', price: 2100, vram: 8, tdp: 115, tier: 'mainstream', perf: 50 },
-    { id: 'rtx4060ti-8g', name: 'NVIDIA RTX 4060 Ti 8G', brand: 'nvidia', price: 2700, vram: 8, tdp: 160, tier: 'mainstream', perf: 60 },
-    { id: 'rtx4060ti-16g', name: 'NVIDIA RTX 4060 Ti 16G', brand: 'nvidia', price: 3100, vram: 16, tdp: 165, tier: 'highend', perf: 62 },
-    { id: 'rtx4070', name: 'NVIDIA RTX 4070', brand: 'nvidia', price: 3800, vram: 12, tdp: 200, tier: 'highend', perf: 72 },
-    { id: 'rtx4070super', name: 'NVIDIA RTX 4070 Super', brand: 'nvidia', price: 4200, vram: 12, tdp: 220, tier: 'highend', perf: 78 },
-    { id: 'rtx4070ti', name: 'NVIDIA RTX 4070 Ti', brand: 'nvidia', price: 5200, vram: 12, tdp: 285, tier: 'highend', perf: 85 },
-    { id: 'rtx4070tisuper', name: 'NVIDIA RTX 4070 Ti Super', brand: 'nvidia', price: 5500, vram: 16, tdp: 285, tier: 'flagship', perf: 88 },
-    { id: 'rtx4080', name: 'NVIDIA RTX 4080', brand: 'nvidia', price: 7500, vram: 16, tdp: 320, tier: 'flagship', perf: 93 },
-    { id: 'rtx4080super', name: 'NVIDIA RTX 4080 Super', brand: 'nvidia', price: 8000, vram: 16, tdp: 320, tier: 'flagship', perf: 95 },
-    { id: 'rtx4090', name: 'NVIDIA RTX 4090', brand: 'nvidia', price: 13000, vram: 24, tdp: 450, tier: 'flagship', perf: 100 },
 
     // NVIDIA 50系
     { id: 'rtx5050', name: 'NVIDIA RTX 5050', brand: 'nvidia', price: 2600, vram: 8, tdp: 130, tier: 'entry', perf: 35 },
@@ -1407,6 +1534,271 @@ function resetAllPrices() {
 
 function getModifiedCount() {
   return Object.keys(getCustomPrices()).length;
+}
+
+// ============================================================
+// Excel 导入功能
+// ============================================================
+let excelWorkbook = null;
+let excelCurrentData = null;
+let excelMatchResults = [];
+
+function openExcelImporter() {
+  document.getElementById('excelImporter').classList.add('show');
+  document.getElementById('excelStep1').style.display = 'block';
+  document.getElementById('excelStep2').style.display = 'none';
+  document.getElementById('excelStep3').style.display = 'none';
+  excelWorkbook = null;
+  excelCurrentData = null;
+  excelMatchResults = [];
+  // 拖拽支持
+  const area = document.getElementById('excelUploadArea');
+  area.ondragover = (e) => { e.preventDefault(); area.classList.add('dragover'); };
+  area.ondragleave = () => area.classList.remove('dragover');
+  area.ondrop = (e) => {
+    e.preventDefault();
+    area.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      parseExcelFile(file);
+    }
+  };
+}
+
+function closeExcelImporter() {
+  document.getElementById('excelImporter').classList.remove('show');
+  if (state.currentBuild) {
+    const build = generateBuild(state.budget, state.scenario, state.cpuBrand, state.gpuBrand);
+    state.currentBuild = build;
+    renderResult(build);
+  }
+}
+
+function handleExcelFile(event) {
+  const file = event.target.files[0];
+  if (file) parseExcelFile(file);
+}
+
+function parseExcelFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      excelWorkbook = XLSX.read(data, { type: 'array' });
+      // 填充sheet下拉
+      const sheetSelect = document.getElementById('excelSheetSelect');
+      sheetSelect.innerHTML = excelWorkbook.SheetNames.map((name, i) =>
+        `<option value="${i}">${name}</option>`
+      ).join('');
+      // 进入步骤2
+      document.getElementById('excelStep1').style.display = 'none';
+      document.getElementById('excelStep2').style.display = 'block';
+      onSheetChange();
+      showToast('Excel 解析成功，共 ' + excelWorkbook.SheetNames.length + ' 个 Sheet');
+    } catch (err) {
+      showToast('解析失败：' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function onSheetChange() {
+  const sheetIdx = document.getElementById('excelSheetSelect').value;
+  const sheetName = excelWorkbook.SheetNames[sheetIdx];
+  const worksheet = excelWorkbook.Sheets[sheetName];
+  excelCurrentData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+  // 填充列下拉
+  const maxCols = Math.max(...excelCurrentData.slice(0, 5).map(r => r.length), 1);
+  const nameColSelect = document.getElementById('excelNameCol');
+  const priceColSelect = document.getElementById('excelPriceCol');
+  let colOptions = '';
+  for (let i = 0; i < maxCols; i++) {
+    const header = excelCurrentData[0] && excelCurrentData[0][i] ? String(excelCurrentData[0][i]).substring(0, 20) : '列' + (i + 1);
+    colOptions += `<option value="${i}">第${i + 1}列 (${header})</option>`;
+  }
+  nameColSelect.innerHTML = colOptions;
+  priceColSelect.innerHTML = colOptions;
+  // 默认选择：型号列=0，价格列=1
+  nameColSelect.value = 0;
+  priceColSelect.value = 1;
+
+  renderExcelPreview();
+}
+
+function renderExcelPreview() {
+  if (!excelCurrentData) return;
+  const nameCol = parseInt(document.getElementById('excelNameCol').value);
+  const priceCol = parseInt(document.getElementById('excelPriceCol').value);
+  const maxCols = Math.max(...excelCurrentData.slice(0, 10).map(r => r.length), 1);
+  const previewRows = excelCurrentData.slice(0, 10);
+
+  let html = '<table class="excel-preview-table"><thead><tr>';
+  for (let c = 0; c < maxCols; c++) {
+    const cls = c === nameCol ? 'name-col' : c === priceCol ? 'price-col' : '';
+    html += `<th class="${cls}">第${c + 1}列</th>`;
+  }
+  html += '</tr></thead><tbody>';
+  previewRows.forEach(row => {
+    html += '<tr>';
+    for (let c = 0; c < maxCols; c++) {
+      const val = row[c] !== undefined ? String(row[c]) : '';
+      html += `<td title="${val}">${val}</td>`;
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('excelPreview').innerHTML = html;
+}
+
+// 型号标准化：去除品牌、后缀，提取核心型号
+function normalizeModel(name) {
+  if (!name) return '';
+  let s = String(name).toUpperCase().replace(/\s+/g, '');
+  // 去除常见品牌前缀
+  const brands = ['华硕', '微星', '技嘉', '七彩虹', '映众', '影驰', '索泰', '耕升', '铭瑄', '昂达', '华擎', '英特尔', 'INTEL', 'AMD', '金士顿', '海盗船', '英睿达', '三星', '希捷', '西数', '铠侠', '致态', '长城', '航嘉', '安钛克', '酷冷', '九州', '利民', 'HKC', 'ASUS', 'MSI', 'GIGABYTE', 'COLORFUL', 'INNO3D', 'GALAX', 'ZOTAC', 'GAINWARD', 'MAXSUN', 'ONDA', 'ASROCK'];
+  brands.forEach(b => { s = s.replace(new RegExp(b, 'gi'), ''); });
+  // 去除常见后缀描述
+  const suffixes = ['万图师', '魔龙', '电竞特工', '巨齿鲨', '大师', '雪豹', '天选', '夜神', '超级冰龙', '曜夜', '冰龙', '黑将', '大将', '骁将', '金属大师', 'Ultra', 'OC', 'GAMING', 'VENTUS', 'TRIO', 'DUAL', 'TUF', 'ROG', 'STRIX', 'PRIME', 'PROART', 'AORUS', 'ELITE', 'AERO', 'GAMINGX', 'GAMINGZ', 'SUPRIM', 'GAMINGPLUS', 'MORTAR', 'BOMBER', 'PRO', 'WIFI', 'BLUETOOTH', 'D4', 'D5', 'DDR4', 'DDR5', 'MATX', 'ATX', 'ITX', '全模组', '半模组', '直出', '金牌', '铜牌', '白牌', '钛金', 'RGB', 'ARGB', '黑色', '白色', '黑', '白', '工包', '原封', '散片', '拆机', '原盒', '盒装', '全国联保', '联保'];
+  suffixes.forEach(suf => { s = s.replace(new RegExp(suf, 'gi'), ''); });
+  return s.trim();
+}
+
+// 计算两个型号的匹配度
+function modelMatchScore(excelModel, dbName) {
+  const a = normalizeModel(excelModel);
+  const b = normalizeModel(dbName);
+  if (!a || !b) return 0;
+  // 完全包含
+  if (a === b) return 100;
+  if (a.includes(b) || b.includes(a)) return 80;
+  // 提取数字+字母核心标识进行匹配
+  const extractCore = (s) => {
+    const m = s.match(/(I[3579]-\d+[A-Z]*)|(R[579]-\d+[A-Z]*)|(RTX\s*\d+[A-Z]*)|(GTX\s*\d+[A-Z]*)|(RX\s*\d+[A-Z]*)|(DDR[45]\s*\d+G?\s*\d*)|(\d+G\s*SSD)|(\d+TB)|(\d+G\s*NVME)|(B\d+M?)|(H\d+M?)|(Z\d+M?)|(X\d+M?)|(A\d+M?)/i);
+    return m ? m[0].replace(/\s+/g, '').toUpperCase() : s;
+  };
+  const ca = extractCore(a);
+  const cb = extractCore(b);
+  if (ca === cb) return 90;
+  if (ca.includes(cb) || cb.includes(ca)) return 70;
+  // 字符级相似度
+  let common = 0;
+  for (const ch of new Set(a)) {
+    if (b.includes(ch)) common++;
+  }
+  return Math.round((common / Math.max(a.length, b.length)) * 50);
+}
+
+function previewExcelMatch() {
+  const nameCol = parseInt(document.getElementById('excelNameCol').value);
+  const priceCol = parseInt(document.getElementById('excelPriceCol').value);
+
+  // 收集所有数据库型号
+  const allItems = [];
+  const categories = ['cpus', 'gpus', 'motherboards', 'rams', 'storages', 'psus', 'cases', 'coolers'];
+  categories.forEach(cat => {
+    DB[cat].forEach(item => {
+      allItems.push({ ...item, category: cat });
+    });
+  });
+
+  excelMatchResults = [];
+  let matched = 0;
+  let unmatched = 0;
+
+  excelCurrentData.forEach((row, rowIdx) => {
+    if (rowIdx === 0) return; // 跳过表头
+    const name = row[nameCol];
+    const price = row[priceCol];
+    if (!name || name === '') return;
+
+    // 解析价格
+    let priceNum = null;
+    if (typeof price === 'number') {
+      priceNum = price;
+    } else if (typeof price === 'string') {
+      const m = price.match(/[\d.]+/);
+      if (m) priceNum = parseFloat(m[0]);
+    }
+    if (!priceNum || priceNum < 10 || priceNum > 100000) return;
+
+    // 匹配最佳型号
+    let bestMatch = null;
+    let bestScore = 0;
+    allItems.forEach(item => {
+      const score = modelMatchScore(String(name), item.name);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = item;
+      }
+    });
+
+    if (bestScore >= 60 && bestMatch) {
+      excelMatchResults.push({
+        excelName: String(name),
+        excelPrice: priceNum,
+        dbItem: bestMatch,
+        score: bestScore,
+        matched: true
+      });
+      matched++;
+    } else {
+      excelMatchResults.push({
+        excelName: String(name),
+        excelPrice: priceNum,
+        dbItem: null,
+        score: bestScore,
+        matched: false
+      });
+      unmatched++;
+    }
+  });
+
+  // 显示结果
+  document.getElementById('excelStep2').style.display = 'none';
+  document.getElementById('excelStep3').style.display = 'block';
+
+  const summary = document.getElementById('excelMatchSummary');
+  summary.innerHTML = `共解析 <strong>${excelMatchResults.length}</strong> 条数据，成功匹配 <strong style="color:var(--green)">${matched}</strong> 条，未匹配 <strong style="color:var(--red)">${unmatched}</strong> 条。匹配度≥60视为成功。`;
+
+  const listEl = document.getElementById('excelMatchList');
+  listEl.innerHTML = excelMatchResults.map(r => {
+    if (r.matched) {
+      return `<div class="excel-match-item">
+        <span class="match-name" title="${r.excelName}">${r.excelName.substring(0, 40)}</span>
+        <span style="color:var(--text-muted);font-size:11px;">→ ${r.dbItem.name}</span>
+        <span class="match-old">¥${r.dbItem.price}</span>
+        <span class="match-arrow">→</span>
+        <span class="match-new">¥${r.excelPrice}</span>
+      </div>`;
+    } else {
+      return `<div class="excel-match-item unmatched">
+        <span class="match-name" title="${r.excelName}">${r.excelName.substring(0, 50)}</span>
+        <span class="match-status">未匹配 (${r.score}分)</span>
+        <span style="color:var(--text-muted);">¥${r.excelPrice}</span>
+      </div>`;
+    }
+  }).join('');
+}
+
+function backToExcelStep2() {
+  document.getElementById('excelStep3').style.display = 'none';
+  document.getElementById('excelStep2').style.display = 'block';
+}
+
+function applyExcelImport() {
+  const custom = getCustomPrices();
+  let count = 0;
+  excelMatchResults.forEach(r => {
+    if (r.matched) {
+      custom[r.dbItem.id] = r.excelPrice;
+      count++;
+    }
+  });
+  localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(custom));
+  applyCustomPrices();
+  showToast('成功导入 ' + count + ' 条价格更新');
+  closeExcelImporter();
 }
 
 // 价格管理面板
