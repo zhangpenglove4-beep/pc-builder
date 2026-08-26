@@ -87,6 +87,251 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
+  .price-manage-btn {
+    padding: 7px 14px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .price-manage-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .price-manage-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+  /* Price Manager Modal */
+  .pm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    backdrop-filter: blur(4px);
+  }
+
+  .pm-modal.show { display: flex; }
+
+  .pm-container {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 720px;
+    max-width: 95vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .pm-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .pm-title {
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .pm-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .pm-close {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pm-close:hover { background: var(--bg-3); color: var(--text); }
+
+  .pm-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .pm-tab {
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+
+  .pm-tab:hover { color: var(--text); }
+
+  .pm-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .pm-body {
+    padding: 16px 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .pm-item {
+    display: grid;
+    grid-template-columns: 1fr 140px 80px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background 0.15s;
+  }
+
+  .pm-item:hover { background: var(--bg-3); }
+
+  .pm-item-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pm-item-default {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .pm-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .pm-input {
+    width: 100%;
+    padding: 7px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .pm-input:focus { border-color: var(--accent); }
+
+  .pm-input.modified {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+    color: var(--accent);
+  }
+
+  .pm-reset-item {
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .pm-reset-item:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .pm-footer {
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .pm-footer-left {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .pm-footer-right {
+    display: flex;
+    gap: 10px;
+  }
+
+  .pm-btn {
+    padding: 9px 18px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .pm-btn-secondary {
+    background: var(--bg-3);
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+
+  .pm-btn-secondary:hover {
+    border-color: var(--text-dim);
+    color: var(--text);
+  }
+
+  .pm-btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .pm-btn-primary:hover {
+    background: var(--accent-dim);
+  }
+
+  .pm-empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
   /* ===== Main Layout ===== */
   .app-main {
     display: grid;
@@ -789,7 +1034,11 @@
     </div>
   </div>
   <div class="header-right">
-    <span class="price-note">价格仅供参考 · 以实际购买为准</span>
+    <button class="price-manage-btn" onclick="openPriceManager()">
+      <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+      价格管理
+    </button>
+    <span class="price-note">价格可自定义</span>
   </div>
 </header>
 
@@ -887,6 +1136,28 @@
       <button class="modal-close" id="modalClose">&times;</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- Price Manager Modal -->
+<div class="pm-modal" id="priceManager">
+  <div class="pm-container">
+    <div class="pm-header">
+      <div>
+        <div class="pm-title">价格管理</div>
+        <div class="pm-subtitle">修改后自动保存到本地浏览器，生成配置单时优先使用自定义价格</div>
+      </div>
+      <button class="pm-close" onclick="closePriceManager()">&times;</button>
+    </div>
+    <div class="pm-tabs" id="pmTabs"></div>
+    <div class="pm-body" id="pmBody"></div>
+    <div class="pm-footer">
+      <div class="pm-footer-left" id="pmFooterInfo">已修改 0 项价格</div>
+      <div class="pm-footer-right">
+        <button class="pm-btn pm-btn-secondary" onclick="resetAllPrices()">全部重置</button>
+        <button class="pm-btn pm-btn-primary" onclick="closePriceManager()">完成</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1064,7 +1335,157 @@ const state = {
   cpuBrand: 'any',
   gpuBrand: 'any',
   currentBuild: null,
+  pmCurrentTab: 'cpu',
 };
+
+// ============================================================
+// 自定义价格管理
+// ============================================================
+const PRICE_STORAGE_KEY = 'pc_builder_custom_prices';
+const defaultPrices = {}; // 保存默认价格用于重置
+
+// 初始化：记录默认价格，加载自定义价格并覆盖到DB
+function initPrices() {
+  const categories = ['cpus', 'gpus', 'motherboards', 'rams', 'storages', 'psus', 'cases', 'coolers'];
+  categories.forEach(cat => {
+    DB[cat].forEach(item => {
+      defaultPrices[item.id] = item.price;
+    });
+  });
+  applyCustomPrices();
+}
+
+function getCustomPrices() {
+  try {
+    return JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveCustomPrice(itemId, price) {
+  const custom = getCustomPrices();
+  if (price === defaultPrices[itemId] || price === null || price === undefined) {
+    delete custom[itemId];
+  } else {
+    custom[itemId] = price;
+  }
+  localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(custom));
+  applyCustomPrices();
+}
+
+function applyCustomPrices() {
+  const custom = getCustomPrices();
+  const categories = ['cpus', 'gpus', 'motherboards', 'rams', 'storages', 'psus', 'cases', 'coolers'];
+  categories.forEach(cat => {
+    DB[cat].forEach(item => {
+      if (custom[item.id] !== undefined) {
+        item.price = custom[item.id];
+      } else {
+        item.price = defaultPrices[item.id];
+      }
+    });
+  });
+}
+
+function resetAllPrices() {
+  localStorage.removeItem(PRICE_STORAGE_KEY);
+  applyCustomPrices();
+  renderPriceManager();
+  showToast('所有价格已重置为默认值');
+}
+
+function getModifiedCount() {
+  return Object.keys(getCustomPrices()).length;
+}
+
+// 价格管理面板
+const pmCategories = [
+  { key: 'cpu', label: 'CPU', dbKey: 'cpus' },
+  { key: 'gpu', label: '显卡', dbKey: 'gpus' },
+  { key: 'motherboard', label: '主板', dbKey: 'motherboards' },
+  { key: 'ram', label: '内存', dbKey: 'rams' },
+  { key: 'storage', label: '硬盘', dbKey: 'storages' },
+  { key: 'psu', label: '电源', dbKey: 'psus' },
+  { key: 'case', label: '机箱', dbKey: 'cases' },
+  { key: 'cooler', label: '散热', dbKey: 'coolers' },
+];
+
+function openPriceManager() {
+  state.pmCurrentTab = 'cpu';
+  renderPriceManager();
+  document.getElementById('priceManager').classList.add('show');
+}
+
+function closePriceManager() {
+  document.getElementById('priceManager').classList.remove('show');
+  // 如果当前有配置单，重新生成以应用新价格
+  if (state.currentBuild) {
+    const build = generateBuild(state.budget, state.scenario, state.cpuBrand, state.gpuBrand);
+    state.currentBuild = build;
+    renderResult(build);
+  }
+}
+
+function renderPriceManager() {
+  // 渲染标签页
+  const tabsEl = document.getElementById('pmTabs');
+  tabsEl.innerHTML = pmCategories.map(cat => {
+    const modified = DB[cat.dbKey].filter(i => getCustomPrices()[i.id] !== undefined).length;
+    return `<button class="pm-tab ${state.pmCurrentTab === cat.key ? 'active' : ''}" onclick="switchPmTab('${cat.key}')">
+      ${cat.label}${modified > 0 ? ` <span style="color:var(--accent)">(${modified})</span>` : ''}
+    </button>`;
+  }).join('');
+
+  // 渲染列表
+  const cat = pmCategories.find(c => c.key === state.pmCurrentTab);
+  const bodyEl = document.getElementById('pmBody');
+  const items = DB[cat.dbKey];
+  const custom = getCustomPrices();
+
+  bodyEl.innerHTML = items.map(item => {
+    const isModified = custom[item.id] !== undefined;
+    return `<div class="pm-item">
+      <div>
+        <div class="pm-item-name">${item.name}</div>
+        <div class="pm-item-default">默认 ¥${defaultPrices[item.id]}</div>
+      </div>
+      <div class="pm-input-wrap">
+        <span style="color:var(--text-muted);font-size:13px;">¥</span>
+        <input type="number" class="pm-input ${isModified ? 'modified' : ''}" value="${item.price}" min="0" step="10" onchange="updateItemPrice('${item.id}', this.value)" oninput="this.classList.add('modified')">
+      </div>
+      <button class="pm-reset-item" onclick="resetItemPrice('${item.id}')" ${isModified ? '' : 'style="opacity:0.3;cursor:default;"'}>重置</button>
+    </div>`;
+  }).join('');
+
+  // 更新底部信息
+  document.getElementById('pmFooterInfo').textContent = `已修改 ${getModifiedCount()} 项价格 · 自动保存到本地`;
+}
+
+function switchPmTab(key) {
+  state.pmCurrentTab = key;
+  renderPriceManager();
+}
+
+function updateItemPrice(itemId, value) {
+  const price = parseInt(value);
+  if (isNaN(price) || price < 0) return;
+  saveCustomPrice(itemId, price);
+  renderPriceManager();
+}
+
+function resetItemPrice(itemId) {
+  const custom = getCustomPrices();
+  if (custom[itemId] === undefined) return;
+  delete custom[itemId];
+  localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(custom));
+  applyCustomPrices();
+  renderPriceManager();
+  showToast('价格已重置');
+}
+
+// 初始化价格
+initPrices();
 
 // ============================================================
 // 智能匹配算法
