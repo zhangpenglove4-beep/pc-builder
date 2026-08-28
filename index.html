@@ -2345,10 +2345,23 @@ async function aiGenerate() {
 
   } catch (e) {
     console.error('AI生成失败:', e);
-    setAIStatus('生成失败: ' + e.message, 'error');
+    setAIStatus('生成失败: ' + translateAIError(e.message), 'error');
   } finally {
     btn.disabled = false;
   }
+}
+
+function translateAIError(msg) {
+  if (!msg) return '未知错误';
+  const m = msg.toLowerCase();
+  if (m.includes('insufficient') || m.includes('balance') || m.includes('余额')) return 'API账户余额不足，请充值或更换API Key';
+  if (m.includes('invalid') && (m.includes('key') || m.includes('api'))) return 'API Key无效，请检查是否正确';
+  if (m.includes('authentication') || m.includes('unauthorized')) return 'API Key认证失败，请检查是否正确';
+  if (m.includes('rate limit') || m.includes('too many')) return '调用过于频繁，请稍后再试';
+  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return '网络连接失败，请检查网络';
+  if (m.includes('timeout')) return '请求超时，请稍后再试';
+  if (m.includes('model') && m.includes('not')) return '模型名称不正确，请检查模型设置';
+  return msg;
 }
 
 function getScenarioName(scenario) {
