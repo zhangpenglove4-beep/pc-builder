@@ -2148,7 +2148,8 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
   // 3. 选内存 —— 预算内选最贵的
   const ramBudget = budget * ratio.ram;
   let ramCandidates = DB.rams.filter(r => r.type === cpu.ramType);
-  if (scenario === 'creator') {
+  // 设计渲染场景或1.2万以上预算，优先32G内存
+  if (scenario === 'creator' || budget >= 12000) {
     const bigRam = ramCandidates.filter(r => r.capacity >= 32);
     if (bigRam.length > 0) ramCandidates = bigRam;
   }
