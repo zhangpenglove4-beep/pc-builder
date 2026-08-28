@@ -2065,28 +2065,39 @@ initPrices();
 // ============================================================
 // 智能匹配算法
 // ============================================================
+// 辅助函数：从候选列表中选预算内最贵的（性能最好）
+function pickBestUnderBudget(candidates, budget) {
+  const affordable = candidates.filter(c => c.price <= budget);
+  if (affordable.length === 0) {
+    // 预算不够，选最便宜的
+    return candidates.sort((a, b) => a.price - b.price)[0];
+  }
+  // 预算内选最贵的
+  return affordable.sort((a, b) => b.price - a.price)[0];
+}
+
 function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
   const build = {};
   let remaining = budget;
 
   // 场景预算分配比例
   const ratios = {
-    gaming:    { cpu: 0.18, gpu: 0.42, mb: 0.10, ram: 0.08, storage: 0.07, psu: 0.07, case: 0.04, cooler: 0.04 },
-    creator:   { cpu: 0.28, gpu: 0.30, mb: 0.12, ram: 0.12, storage: 0.08, psu: 0.06, case: 0.02, cooler: 0.02 },
-    office:    { cpu: 0.30, gpu: 0.05, mb: 0.15, ram: 0.15, storage: 0.15, psu: 0.10, case: 0.05, cooler: 0.05 },
-    allround:  { cpu: 0.22, gpu: 0.35, mb: 0.11, ram: 0.10, storage: 0.08, psu: 0.07, case: 0.04, cooler: 0.03 },
+    gaming:    { cpu: 0.20, gpu: 0.40, mb: 0.10, ram: 0.08, storage: 0.07, psu: 0.06, case: 0.04, cooler: 0.05 },
+    creator:   { cpu: 0.30, gpu: 0.28, mb: 0.12, ram: 0.12, storage: 0.08, psu: 0.05, case: 0.02, cooler: 0.03 },
+    office:    { cpu: 0.32, gpu: 0.05, mb: 0.14, ram: 0.14, storage: 0.14, psu: 0.08, case: 0.06, cooler: 0.07 },
+    allround:  { cpu: 0.24, gpu: 0.34, mb: 0.11, ram: 0.10, storage: 0.08, psu: 0.06, case: 0.03, cooler: 0.04 },
   };
   const ratio = ratios[scenario];
 
   // 判断是否需要核显（办公场景低预算不配独显，必须用带核显的CPU）
   const needIGPU = scenario === 'office' && budget < 4500;
 
-  // 1. 选 CPU
+  // 1. 选 CPU —— 预算内选最贵的
   const cpuBudget = budget * ratio.cpu;
   let cpuCandidates = DB.cpus.filter(c => {
     if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
-    if (needIGPU && !c.igpu) return false; // 不配独显时只选带核显的CPU
-    return c.price <= cpuBudget * 1.3;
+    if (needIGPU && !c.igpu) return false;
+    return c.price <= cpuBudget * 1.15; // 放宽15%，后面配件可以省回来
   });
   if (cpuCandidates.length === 0) {
     cpuCandidates = DB.cpus.filter(c => {
@@ -2096,67 +2107,61 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
     });
   }
   if (cpuCandidates.length === 0) {
-    // 品牌限制下找不到带核显的，放宽品牌
     cpuCandidates = DB.cpus.filter(c => needIGPU ? c.igpu : true);
   }
-  // 选最接近预算的
-  cpuCandidates.sort((a, b) => Math.abs(a.price - cpuBudget) - Math.abs(b.price - cpuBudget));
-  const cpu = cpuCandidates[0];
+  const cpu = pickBestUnderBudget(cpuCandidates, cpuBudget * 1.15);
   build.cpu = cpu;
   remaining -= cpu.price;
 
-  // 2. 选主板（匹配CPU接口和内存类型）
+  // 2. 选主板（匹配CPU接口和内存类型）—— 预算内选最贵的
   const mbBudget = budget * ratio.mb;
   let mbCandidates = DB.motherboards.filter(m =>
     m.socket === cpu.socket && m.ramType === cpu.ramType
   );
-  mbCandidates.sort((a, b) => Math.abs(a.price - mbBudget) - Math.abs(b.price - mbBudget));
-  const mb = mbCandidates[0];
+  const mb = pickBestUnderBudget(mbCandidates, mbBudget * 1.2);
   build.motherboard = mb;
   remaining -= mb.price;
 
-  // 3. 选内存
+  // 3. 选内存 —— 预算内选最贵的
   const ramBudget = budget * ratio.ram;
   let ramCandidates = DB.rams.filter(r => r.type === cpu.ramType);
-  // 设计渲染场景优先大内存
   if (scenario === 'creator') {
-    ramCandidates = ramCandidates.filter(r => r.capacity >= 32);
-    if (ramCandidates.length === 0) ramCandidates = DB.rams.filter(r => r.type === cpu.ramType);
+    const bigRam = ramCandidates.filter(r => r.capacity >= 32);
+    if (bigRam.length > 0) ramCandidates = bigRam;
   }
-  ramCandidates.sort((a, b) => Math.abs(a.price - ramBudget) - Math.abs(b.price - ramBudget));
-  const ram = ramCandidates[0];
+  const ram = pickBestUnderBudget(ramCandidates, ramBudget * 1.2);
   build.ram = ram;
   remaining -= ram.price;
 
-  // 4. 选硬盘
+  // 4. 选硬盘 —— 预算内选最贵的
   const storageBudget = budget * ratio.storage;
   let storageCandidates = [...DB.storages];
-  if (scenario === 'creator') storageCandidates = storageCandidates.filter(s => s.capacity >= 1024);
-  if (storageCandidates.length === 0) storageCandidates = [...DB.storages];
-  storageCandidates.sort((a, b) => Math.abs(a.price - storageBudget) - Math.abs(b.price - storageBudget));
-  const storage = storageCandidates[0];
+  if (scenario === 'creator') {
+    const bigStorage = storageCandidates.filter(s => s.capacity >= 1024);
+    if (bigStorage.length > 0) storageCandidates = bigStorage;
+  }
+  const storage = pickBestUnderBudget(storageCandidates, storageBudget * 1.2);
   build.storage = storage;
   remaining -= storage.price;
 
-  // 5. 选显卡（办公场景低预算用核显，不配独显）
+  // 5. 选显卡 —— 用剩余预算的大部分来选，预算内选最贵的
   if (needIGPU) {
     build.gpu = null;
   } else {
-    const gpuBudget = remaining * 0.75; // 留余量给其他配件
+    const gpuBudget = remaining * 0.82; // 留18%给电源散热机箱
     let gpuCandidates = DB.gpus.filter(g => {
       if (gpuBrand !== 'any' && g.brand !== gpuBrand) return false;
-      return g.price <= gpuBudget * 1.1;
+      return g.price <= gpuBudget * 1.05;
     });
     if (gpuCandidates.length === 0) {
       gpuCandidates = DB.gpus.filter(g => gpuBrand === 'any' || g.brand === gpuBrand);
     }
-    gpuCandidates.sort((a, b) => Math.abs(a.price - gpuBudget) - Math.abs(b.price - gpuBudget));
-    const gpu = gpuCandidates[0];
+    const gpu = pickBestUnderBudget(gpuCandidates, gpuBudget * 1.05);
     build.gpu = gpu;
     remaining -= gpu.price;
   }
 
-  // 6. 选电源（根据CPU+显卡功耗）
+  // 6. 选电源（根据CPU+显卡功耗）—— 满足功耗前提下，预算内选好的
   const totalTdp = cpu.tdp + (build.gpu ? build.gpu.tdp : 50);
   const neededWatt = Math.ceil(totalTdp * 1.5 / 50) * 50;
   let psuCandidates = DB.psus.filter(p => p.watt >= neededWatt);
@@ -2166,12 +2171,13 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
     const gold = psuCandidates.filter(p => p.rating !== '铜牌');
     if (gold.length > 0) psuCandidates = gold;
   }
-  psuCandidates.sort((a, b) => a.price - b.price);
-  const psu = psuCandidates[0];
+  // 预算内选好的（不是最便宜的），上限为剩余预算的30%
+  const psuBudget = Math.max(remaining * 0.3, budget * ratio.psu);
+  const psu = pickBestUnderBudget(psuCandidates, psuBudget);
   build.psu = psu;
   remaining -= psu.price;
 
-  // 7. 选散热器
+  // 7. 选散热器 —— 满足TDP前提下，预算内选好的
   let coolerCandidates = DB.coolers.filter(c => c.tdp >= cpu.tdp);
   if (coolerCandidates.length === 0) coolerCandidates = DB.coolers;
   // 高端CPU用水冷
@@ -2179,21 +2185,50 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
     const aio = coolerCandidates.filter(c => c.type === '水冷');
     if (aio.length > 0) coolerCandidates = aio;
   }
-  coolerCandidates.sort((a, b) => a.price - b.price);
-  const cooler = coolerCandidates[0];
+  const coolerBudget = Math.max(remaining * 0.35, budget * ratio.cooler);
+  const cooler = pickBestUnderBudget(coolerCandidates, coolerBudget);
   build.cooler = cooler;
   remaining -= cooler.price;
 
-  // 8. 选机箱
+  // 8. 选机箱 —— 用剩余预算选
   let caseCandidates = DB.cases.filter(c => {
     if (cpu.tier === 'flagship') return c.tier === 'flagship' || c.tier === 'highend';
     if (cpu.tier === 'highend') return c.tier !== 'flagship';
     return true;
   });
-  caseCandidates.sort((a, b) => Math.abs(a.price - remaining * 0.8) - Math.abs(b.price - remaining * 0.8));
-  const pcCase = caseCandidates[0];
+  const pcCase = pickBestUnderBudget(caseCandidates, remaining * 0.9);
   build.case = pcCase;
   remaining -= pcCase.price;
+
+  // 9. 二次优化：如果剩余预算还很多（>5%），尝试升级显卡
+  if (build.gpu && remaining > budget * 0.05) {
+    const gpuCandidates = DB.gpus.filter(g => {
+      if (gpuBrand !== 'any' && g.brand !== gpuBrand) return false;
+      return g.price > build.gpu.price && g.price <= build.gpu.price + remaining;
+    });
+    if (gpuCandidates.length > 0) {
+      const betterGpu = gpuCandidates.sort((a, b) => b.price - a.price)[0];
+      remaining += build.gpu.price;
+      build.gpu = betterGpu;
+      remaining -= betterGpu.price;
+    }
+  }
+
+  // 10. 二次优化：如果剩余还多，尝试升级CPU
+  if (remaining > budget * 0.05) {
+    const cpuCandidates2 = DB.cpus.filter(c => {
+      if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
+      if (needIGPU && !c.igpu) return false;
+      if (c.socket !== cpu.socket) return false;
+      return c.price > cpu.price && c.price <= cpu.price + remaining;
+    });
+    if (cpuCandidates2.length > 0) {
+      const betterCpu = cpuCandidates2.sort((a, b) => b.price - a.price)[0];
+      remaining += cpu.price;
+      build.cpu = betterCpu;
+      remaining -= betterCpu.price;
+    }
+  }
 
   // 计算总价
   build.total = Object.values(build).reduce((sum, item) => {
