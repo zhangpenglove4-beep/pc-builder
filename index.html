@@ -1501,6 +1501,16 @@ const DB = {
     { id: 'i5-12400', name: 'Intel i5-12400', brand: 'intel', socket: 'lga1700', price: 860, cores: 6, threads: 12, base: 2.5, boost: 4.4, tdp: 65, tier: 'mainstream', ramType: 'ddr4', igpu: 'UHD 730' },
     { id: 'i5-13400', name: 'Intel i5-13400', brand: 'intel', socket: 'lga1700', price: 890, cores: 10, threads: 16, base: 2.5, boost: 4.6, tdp: 65, tier: 'mainstream', ramType: 'ddr4', igpu: 'UHD 730' },
 
+    // Intel 15代 Ultra (LGA1851, DDR5 only)
+    { id: 'ultra5-230f', name: 'Intel Ultra 5 230F', brand: 'intel', socket: 'lga1851', price: 620, cores: 10, threads: 16, base: 3.4, boost: 5.0, tdp: 65, tier: 'entry', ramType: 'ddr5' },
+    { id: 'ultra5-225', name: 'Intel Ultra 5 225', brand: 'intel', socket: 'lga1851', price: 990, cores: 10, threads: 16, base: 2.7, boost: 4.7, tdp: 65, tier: 'mainstream', ramType: 'ddr5', igpu: 'Arc Graphics' },
+    { id: 'ultra5-250kf', name: 'Intel Ultra 5 250KF', brand: 'intel', socket: 'lga1851', price: 1190, cores: 18, threads: 24, base: 4.2, boost: 5.5, tdp: 125, tier: 'mainstream', ramType: 'ddr5' },
+    { id: 'ultra5-250k', name: 'Intel Ultra 5 250K', brand: 'intel', socket: 'lga1851', price: 1290, cores: 18, threads: 24, base: 4.2, boost: 5.5, tdp: 125, tier: 'highend', ramType: 'ddr5', igpu: 'Arc Graphics' },
+    { id: 'ultra7-265kf', name: 'Intel Ultra 7 265KF', brand: 'intel', socket: 'lga1851', price: 1650, cores: 20, threads: 28, base: 3.9, boost: 5.7, tdp: 125, tier: 'highend', ramType: 'ddr5' },
+    { id: 'ultra7-265k', name: 'Intel Ultra 7 265K', brand: 'intel', socket: 'lga1851', price: 1710, cores: 20, threads: 28, base: 3.9, boost: 5.7, tdp: 125, tier: 'highend', ramType: 'ddr5', igpu: 'Arc Graphics' },
+    { id: 'ultra7-270k', name: 'Intel Ultra 7 270K', brand: 'intel', socket: 'lga1851', price: 1890, cores: 24, threads: 32, base: 3.7, boost: 5.8, tdp: 125, tier: 'highend', ramType: 'ddr5', igpu: 'Arc Graphics' },
+    { id: 'ultra9-285k', name: 'Intel Ultra 9 285K', brand: 'intel', socket: 'lga1851', price: 2860, cores: 24, threads: 32, base: 3.7, boost: 6.0, tdp: 125, tier: 'flagship', ramType: 'ddr5', igpu: 'Arc Graphics' },
+
     // AMD AM4
     { id: 'r5-5500', name: 'AMD R5 5500', brand: 'amd', socket: 'am4', price: 500, cores: 6, threads: 12, base: 3.6, boost: 4.2, tdp: 65, tier: 'entry', ramType: 'ddr4' },
     { id: 'r5-5600', name: 'AMD R5 5600', brand: 'amd', socket: 'am4', price: 640, cores: 6, threads: 12, base: 3.5, boost: 4.4, tdp: 65, tier: 'entry', ramType: 'ddr4' },
@@ -1568,6 +1578,15 @@ const DB = {
     { id: 'b760-d5', name: 'B760 DDR5 主板', socket: 'lga1700', ramType: 'ddr5', price: 1100, tier: 'highend', vrm: '12+1' },
     { id: 'z790-d5', name: 'Z790 DDR5 主板', socket: 'lga1700', ramType: 'ddr5', price: 1500, tier: 'highend', vrm: '16+1' },
     { id: 'z790-flagship', name: 'Z790 旗舰主板', socket: 'lga1700', ramType: 'ddr5', price: 2500, tier: 'flagship', vrm: '20+1' },
+
+    // LGA1851 DDR5 (15代Ultra)
+    { id: 'b860m-k', name: 'B860M 主板', socket: 'lga1851', ramType: 'ddr5', price: 680, tier: 'entry', vrm: '10+1' },
+    { id: 'b860m-ayw', name: 'B860M AYW 主板', socket: 'lga1851', ramType: 'ddr5', price: 845, tier: 'mainstream', vrm: '12+1' },
+    { id: 'b860m-tx', name: 'TX B860M 主板', socket: 'lga1851', ramType: 'ddr5', price: 1010, tier: 'mainstream', vrm: '12+1' },
+    { id: 'b860m-tuf', name: 'TUF B860M 主板', socket: 'lga1851', ramType: 'ddr5', price: 1080, tier: 'highend', vrm: '14+1' },
+    { id: 'z890-p', name: 'Z890-P 主板', socket: 'lga1851', ramType: 'ddr5', price: 1220, tier: 'highend', vrm: '16+1' },
+    { id: 'z890-pro', name: 'Z890 PRO WIFI 主板', socket: 'lga1851', ramType: 'ddr5', price: 1250, tier: 'highend', vrm: '16+1' },
+    { id: 'z890-tuf', name: 'TUF Z890 PLUS WIFI 主板', socket: 'lga1851', ramType: 'ddr5', price: 1880, tier: 'flagship', vrm: '20+1' },
 
     // AM4
     { id: 'a520m', name: 'A520M 主板', socket: 'am4', ramType: 'ddr4', price: 430, tier: 'entry', vrm: '4+2' },
