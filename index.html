@@ -2103,7 +2103,7 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
 
   // 场景预算分配比例
   const ratios = {
-    gaming:    { cpu: 0.20, gpu: 0.40, mb: 0.10, ram: 0.08, storage: 0.07, psu: 0.06, case: 0.04, cooler: 0.05 },
+    gaming:    { cpu: 0.15, gpu: 0.48, mb: 0.10, ram: 0.08, storage: 0.07, psu: 0.06, case: 0.03, cooler: 0.03 },
     creator:   { cpu: 0.30, gpu: 0.28, mb: 0.12, ram: 0.12, storage: 0.08, psu: 0.05, case: 0.02, cooler: 0.03 },
     office:    { cpu: 0.32, gpu: 0.05, mb: 0.14, ram: 0.14, storage: 0.14, psu: 0.08, case: 0.06, cooler: 0.07 },
     allround:  { cpu: 0.24, gpu: 0.34, mb: 0.11, ram: 0.10, storage: 0.08, psu: 0.06, case: 0.03, cooler: 0.04 },
@@ -2118,12 +2118,14 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
   let cpuCandidates = DB.cpus.filter(c => {
     if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
     if (needIGPU && !c.igpu) return false;
+    if (scenario === 'gaming' && c.tier === 'flagship') return false; // 游戏场景不选旗舰CPU，U7/i7足够
     return c.price <= cpuBudget * 1.15; // 放宽15%，后面配件可以省回来
   });
   if (cpuCandidates.length === 0) {
     cpuCandidates = DB.cpus.filter(c => {
       if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
       if (needIGPU && !c.igpu) return false;
+      if (scenario === 'gaming' && c.tier === 'flagship') return false;
       return true;
     });
   }
@@ -2241,6 +2243,7 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
       if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
       if (needIGPU && !c.igpu) return false;
       if (c.socket !== cpu.socket) return false;
+      if (scenario === 'gaming' && c.tier === 'flagship') return false; // 游戏场景不升级到旗舰CPU
       return c.price > cpu.price && c.price <= cpu.price + remaining;
     });
     if (cpuCandidates2.length > 0) {
