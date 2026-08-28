@@ -2204,8 +2204,14 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
   // 7. 选散热器 —— 满足TDP前提下，预算内选好的
   let coolerCandidates = DB.coolers.filter(c => c.tdp >= cpu.tdp);
   if (coolerCandidates.length === 0) coolerCandidates = DB.coolers;
+  // 不带K的i5及以下CPU，只用主流风冷及以下，不选高端风冷或水冷
+  const isLowEndNonK = (cpu.tier === 'entry' || cpu.tier === 'mainstream') && !cpu.id.toLowerCase().includes('k');
+  if (isLowEndNonK) {
+    const midAir = coolerCandidates.filter(c => c.type === '风冷' && (c.tier === 'entry' || c.tier === 'mainstream'));
+    if (midAir.length > 0) coolerCandidates = midAir;
+  }
   // 高端CPU用水冷
-  if (cpu.tier === 'flagship' || (cpu.tier === 'highend' && cpu.tdp >= 125)) {
+  else if (cpu.tier === 'flagship' || (cpu.tier === 'highend' && cpu.tdp >= 125)) {
     const aio = coolerCandidates.filter(c => c.type === '水冷');
     if (aio.length > 0) coolerCandidates = aio;
   }
