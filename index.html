@@ -618,6 +618,95 @@
     font-weight: 500;
   }
 
+  /* AI Smart Recommend */
+  .ai-section {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .ai-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .ai-settings-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .ai-settings-btn:hover {
+    background: var(--bg-3);
+  }
+  .ai-input {
+    width: 100%;
+    min-height: 70px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  .ai-input:focus {
+    border-color: var(--accent);
+  }
+  .ai-input::placeholder {
+    color: var(--text-muted);
+  }
+  .ai-generate-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--bg-3);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .ai-generate-btn:hover {
+    background: var(--accent-glow);
+  }
+  .ai-generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .ai-status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    min-height: 16px;
+  }
+  .ai-status.loading {
+    color: var(--accent);
+  }
+  .ai-status.error {
+    color: var(--red);
+  }
+  .ai-status.success {
+    color: var(--green);
+  }
+
   /* Generate Button */
   .generate-btn {
     width: 100%;
@@ -1365,6 +1454,17 @@
       </div>
     </div>
 
+    <!-- AI Smart Recommend -->
+    <div class="ai-section">
+      <div class="ai-header">
+        <span class="ai-title">智能推荐</span>
+        <button class="ai-settings-btn" onclick="openAISettings()" title="API设置">⚙️</button>
+      </div>
+      <textarea class="ai-input" id="aiInput" placeholder="用自然语言描述需求，例如：我要一个能玩黑神话悟空的电脑，预算8000，优先N卡，要白色机箱"></textarea>
+      <button class="ai-generate-btn" id="aiGenerateBtn" onclick="aiGenerate()">智能生成配置</button>
+      <div class="ai-status" id="aiStatus"></div>
+    </div>
+
     <!-- Generate -->
     <button class="generate-btn" id="generateBtn">生成配置单</button>
   </aside>
@@ -1466,6 +1566,53 @@
           <button class="pm-btn pm-btn-secondary" onclick="backToExcelStep2()">返回调整</button>
           <button class="pm-btn pm-btn-primary" onclick="applyExcelImport()">确认导入更新</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Settings Modal -->
+<div class="pm-modal" id="aiSettingsModal">
+  <div class="pm-container" style="max-width: 500px;">
+    <div class="pm-header">
+      <div>
+        <div class="pm-title">AI 大模型设置</div>
+        <div class="pm-subtitle">配置免费大模型 API，支持自然语言智能推荐</div>
+      </div>
+      <button class="pm-close" onclick="closeAISettings()">&times;</button>
+    </div>
+    <div class="pm-body">
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 6px;">API 平台</div>
+        <select class="pm-input" id="aiPlatform" style="text-align: left; width: 100%;">
+          <option value="deepseek">DeepSeek（推荐，有免费额度）</option>
+          <option value="siliconflow">硅基流动（免费额度多）</option>
+          <option value="custom">自定义接口</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 6px;">API Key</div>
+        <input type="password" class="pm-input" id="aiApiKey" placeholder="sk-xxxxxxxxxxxxxxxx" style="text-align: left; width: 100%;">
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+          Key 仅保存在本地浏览器，不会上传到任何服务器
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 6px;">模型名称</div>
+        <input type="text" class="pm-input" id="aiModel" value="deepseek-chat" style="text-align: left; width: 100%;">
+      </div>
+      <div style="background: var(--bg-3); padding: 12px; border-radius: 8px; font-size: 12px; color: var(--text-dim); line-height: 1.6;">
+        <div style="font-weight: 600; color: var(--text); margin-bottom: 6px;">获取免费 API Key：</div>
+        <div>• DeepSeek：访问 platform.deepseek.com 注册，送免费额度</div>
+        <div>• 硅基流动：访问 siliconflow.cn 注册，新用户送免费额度</div>
+        <div>• 两者都支持 OpenAI 兼容接口，调用便宜稳定</div>
+      </div>
+    </div>
+    <div class="pm-footer">
+      <div class="pm-footer-left" id="aiTestResult"></div>
+      <div class="pm-footer-right">
+        <button class="pm-btn pm-btn-secondary" onclick="testAIConnection()">测试连接</button>
+        <button class="pm-btn pm-btn-primary" onclick="saveAISettings()">保存</button>
       </div>
     </div>
   </div>
@@ -1993,6 +2140,220 @@ function applyExcelImport() {
   applyCustomPrices();
   showToast('成功导入 ' + count + ' 条价格更新');
   closeExcelImporter();
+}
+
+// ============================================================
+// AI 智能推荐
+// ============================================================
+const AI_STORAGE_KEY = 'pc_builder_ai_settings';
+
+function getAISettings() {
+  try {
+    return JSON.parse(localStorage.getItem(AI_STORAGE_KEY)) || { platform: 'deepseek', apiKey: '', model: 'deepseek-chat' };
+  } catch (e) {
+    return { platform: 'deepseek', apiKey: '', model: 'deepseek-chat' };
+  }
+}
+
+function openAISettings() {
+  const settings = getAISettings();
+  document.getElementById('aiPlatform').value = settings.platform;
+  document.getElementById('aiApiKey').value = settings.apiKey;
+  document.getElementById('aiModel').value = settings.model;
+  document.getElementById('aiTestResult').textContent = '';
+  document.getElementById('aiSettingsModal').classList.add('show');
+}
+
+function closeAISettings() {
+  document.getElementById('aiSettingsModal').classList.remove('show');
+}
+
+function saveAISettings() {
+  const settings = {
+    platform: document.getElementById('aiPlatform').value,
+    apiKey: document.getElementById('aiApiKey').value.trim(),
+    model: document.getElementById('aiModel').value.trim()
+  };
+  localStorage.setItem(AI_STORAGE_KEY, JSON.stringify(settings));
+  showToast('AI 设置已保存');
+  closeAISettings();
+}
+
+function getAIEndpoint(platform) {
+  if (platform === 'deepseek') return 'https://api.deepseek.com/v1/chat/completions';
+  if (platform === 'siliconflow') return 'https://api.siliconflow.cn/v1/chat/completions';
+  return 'https://api.deepseek.com/v1/chat/completions';
+}
+
+async function testAIConnection() {
+  const settings = getAISettings();
+  if (!settings.apiKey) {
+    document.getElementById('aiTestResult').innerHTML = '<span style="color:var(--red)">请先填写 API Key</span>';
+    return;
+  }
+  document.getElementById('aiTestResult').innerHTML = '<span style="color:var(--accent)">测试中...</span>';
+  try {
+    const endpoint = getAIEndpoint(settings.platform);
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + settings.apiKey
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [{ role: 'user', content: '说"连接成功"' }],
+        max_tokens: 20,
+        temperature: 0
+      })
+    });
+    if (response.ok) {
+      document.getElementById('aiTestResult').innerHTML = '<span style="color:var(--green)">连接成功！</span>';
+    } else {
+      const err = await response.json();
+      document.getElementById('aiTestResult').innerHTML = '<span style="color:var(--red)">连接失败: ' + (err.error?.message || response.status) + '</span>';
+    }
+  } catch (e) {
+    document.getElementById('aiTestResult').innerHTML = '<span style="color:var(--red)">网络错误: ' + e.message + '</span>';
+  }
+}
+
+function setAIStatus(text, type) {
+  const el = document.getElementById('aiStatus');
+  el.textContent = text;
+  el.className = 'ai-status ' + (type || '');
+}
+
+async function aiGenerate() {
+  const userInput = document.getElementById('aiInput').value.trim();
+  if (!userInput) {
+    showToast('请先输入你的需求');
+    return;
+  }
+  const settings = getAISettings();
+  if (!settings.apiKey) {
+    showToast('请先在设置中配置 API Key');
+    openAISettings();
+    return;
+  }
+
+  const btn = document.getElementById('aiGenerateBtn');
+  btn.disabled = true;
+  setAIStatus('正在分析你的需求...', 'loading');
+
+  try {
+    const endpoint = getAIEndpoint(settings.platform);
+    const systemPrompt = `你是一个专业的电脑配置专家。请根据用户的需求，提取配置参数并以严格的JSON格式返回。
+
+需要提取的参数：
+- budget: 预算金额（数字，单位元，如果用户没说则根据需求合理估算）
+- scenario: 使用场景，只能是 gaming（游戏娱乐）、creator（设计渲染）、office（办公学习）、allround（综合家用） 四选一
+- cpuBrand: CPU品牌偏好，只能是 intel、amd、any 三选一
+- gpuBrand: 显卡品牌偏好，只能是 nvidia、amd、any 三选一
+- notes: 其他特殊需求（简短字符串，如"要白色机箱"、"优先小机箱"、"需要WiFi"等，没有则为空字符串）
+
+注意：
+1. 游戏场景优先NVIDIA显卡，预算分配偏向显卡
+2. 设计渲染场景优先多核CPU和大内存
+3. 办公场景可以用核显
+4. 预算要合理，不要虚高或虚低
+
+请只返回JSON对象，不要任何其他文字、解释或markdown代码块标记。`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + settings.apiKey
+      },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userInput }
+        ],
+        max_tokens: 300,
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'API调用失败: ' + response.status);
+    }
+
+    const data = await response.json();
+    const aiText = data.choices[0].message.content.trim();
+
+    // 解析JSON
+    let params;
+    try {
+      // 尝试直接解析
+      params = JSON.parse(aiText);
+    } catch (e) {
+      // 尝试提取JSON部分
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        params = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('无法解析AI返回的参数');
+      }
+    }
+
+    // 验证和修正参数
+    const validScenarios = ['gaming', 'creator', 'office', 'allround'];
+    const validCpuBrands = ['intel', 'amd', 'any'];
+    const validGpuBrands = ['nvidia', 'amd', 'any'];
+
+    const budget = Math.max(2000, Math.min(80000, parseInt(params.budget) || 6000));
+    const scenario = validScenarios.includes(params.scenario) ? params.scenario : 'allround';
+    const cpuBrand = validCpuBrands.includes(params.cpuBrand) ? params.cpuBrand : 'any';
+    const gpuBrand = validGpuBrands.includes(params.gpuBrand) ? params.gpuBrand : 'any';
+    const notes = params.notes || '';
+
+    setAIStatus('AI识别完成，正在生成配置...', 'success');
+
+    // 更新表单
+    state.budget = budget;
+    state.scenario = scenario;
+    state.cpuBrand = cpuBrand;
+    state.gpuBrand = gpuBrand;
+
+    // 更新UI
+    document.getElementById('budgetSlider').value = budget;
+    document.getElementById('budgetDisplay').textContent = budget.toLocaleString();
+    updatePresetActive();
+
+    document.querySelectorAll('.scenario-card').forEach(c => {
+      c.classList.toggle('active', c.dataset.scenario === scenario);
+    });
+    document.querySelectorAll('#cpuBrandRow .brand-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.brand === cpuBrand);
+    });
+    document.querySelectorAll('#gpuBrandRow .brand-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.brand === gpuBrand);
+    });
+
+    // 生成配置单
+    const build = generateBuild(budget, scenario, cpuBrand, gpuBrand);
+    state.currentBuild = build;
+    renderResult(build);
+
+    let statusText = 'AI识别：预算¥' + budget.toLocaleString() + '，' + getScenarioName(scenario);
+    if (notes) statusText += '，备注：' + notes;
+    setAIStatus(statusText, 'success');
+
+  } catch (e) {
+    console.error('AI生成失败:', e);
+    setAIStatus('生成失败: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function getScenarioName(scenario) {
+  const names = { gaming: '游戏娱乐', creator: '设计渲染', office: '办公学习', allround: '综合家用' };
+  return names[scenario] || scenario;
 }
 
 // 价格管理面板
