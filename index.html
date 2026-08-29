@@ -2250,6 +2250,7 @@ async function aiGenerate() {
 - scenario: 使用场景，只能是 gaming（游戏娱乐）、creator（设计渲染）、office（办公学习）、allround（综合家用） 四选一
 - cpuBrand: CPU品牌偏好，只能是 intel、amd、any 三选一
 - cpuTier: CPU档次偏好，只能是 entry（i3/R3/U3级别）、mainstream（i5/R5/U5级别）、highend（i7/R7/U7级别）、flagship（i9/R9/U9级别）、any（不指定） 五选一。用户说"要i7"、"i7起步"、"至少i7"等就选highend；说"要i5"就选mainstream；说"要i9"就选flagship；说"要i3"就选entry；没说就选any
+- ramCapacity: 内存容量偏好，数字，单位GB。用户说"内存32g"、"要32G内存"、"64g内存"等就填对应的数字；没说就填0表示不指定
 - gpuBrand: 显卡品牌偏好，只能是 nvidia、amd、any 三选一
 - notes: 其他特殊需求（简短字符串，如"要白色机箱"、"优先小机箱"、"需要WiFi"等，没有则为空字符串）
 
@@ -2312,6 +2313,7 @@ async function aiGenerate() {
     const scenario = validScenarios.includes(params.scenario) ? params.scenario : 'allround';
     const cpuBrand = validCpuBrands.includes(params.cpuBrand) ? params.cpuBrand : 'any';
     const cpuTier = validCpuTiers.includes(params.cpuTier) ? params.cpuTier : 'any';
+    const ramCapacity = Math.max(0, Math.min(128, parseInt(params.ramCapacity) || 0));
     const gpuBrand = validGpuBrands.includes(params.gpuBrand) ? params.gpuBrand : 'any';
     const notes = params.notes || '';
 
@@ -2339,12 +2341,13 @@ async function aiGenerate() {
     });
 
     // 生成配置单
-    const build = generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier);
+    const build = generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier, ramCapacity);
     state.currentBuild = build;
     renderResult(build);
 
     let statusText = 'AI识别：预算¥' + budget.toLocaleString() + '，' + getScenarioName(scenario);
     if (cpuTier !== 'any') statusText += '，CPU:' + getCpuTierName(cpuTier);
+    if (ramCapacity > 0) statusText += '，内存:' + ramCapacity + 'G';
     if (notes) statusText += '，备注：' + notes;
     setAIStatus(statusText, 'success');
 
@@ -2481,7 +2484,7 @@ function pickBestUnderBudget(candidates, budget) {
   return affordable.sort((a, b) => b.price - a.price)[0];
 }
 
-function generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier = 'any') {
+function generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier = 'any', ramCapacity = 0) {
   const build = {};
   let remaining = budget;
 
@@ -2548,8 +2551,15 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier = 'any') {
   // 3. 选内存 —— 预算内选最贵的
   const ramBudget = budget * ratio.ram;
   let ramCandidates = DB.rams.filter(r => r.type === cpu.ramType);
+  // 如果指定了内存容量，优先选对应容量及以上
+  if (ramCapacity > 0) {
+    const matchedRam = ramCandidates.filter(r => r.capacity >= ramCapacity);
+    if (matchedRam.length > 0) {
+      ramCandidates = matchedRam;
+    }
+  }
   // 设计渲染场景或1.2万以上预算，优先32G内存
-  if (scenario === 'creator' || budget >= 12000) {
+  else if (scenario === 'creator' || budget >= 12000) {
     const bigRam = ramCandidates.filter(r => r.capacity >= 32);
     if (bigRam.length > 0) ramCandidates = bigRam;
   }
