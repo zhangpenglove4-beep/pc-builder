@@ -2249,6 +2249,7 @@ async function aiGenerate() {
 - budget: 预算金额（数字，单位元，如果用户没说则根据需求合理估算）
 - scenario: 使用场景，只能是 gaming（游戏娱乐）、creator（设计渲染）、office（办公学习）、allround（综合家用） 四选一
 - cpuBrand: CPU品牌偏好，只能是 intel、amd、any 三选一
+- cpuTier: CPU档次偏好，只能是 entry（i3/R3/U3级别）、mainstream（i5/R5/U5级别）、highend（i7/R7/U7级别）、flagship（i9/R9/U9级别）、any（不指定） 五选一。用户说"要i7"、"i7起步"、"至少i7"等就选highend；说"要i5"就选mainstream；说"要i9"就选flagship；说"要i3"就选entry；没说就选any
 - gpuBrand: 显卡品牌偏好，只能是 nvidia、amd、any 三选一
 - notes: 其他特殊需求（简短字符串，如"要白色机箱"、"优先小机箱"、"需要WiFi"等，没有则为空字符串）
 
@@ -2257,6 +2258,7 @@ async function aiGenerate() {
 2. 设计渲染场景优先多核CPU和大内存
 3. 办公场景可以用核显
 4. 预算要合理，不要虚高或虚低
+5. cpuTier是硬约束，如果用户明确说了要i7，就必须选highend，不能因为预算就降到i5
 
 请只返回JSON对象，不要任何其他文字、解释或markdown代码块标记。`;
 
@@ -2303,11 +2305,13 @@ async function aiGenerate() {
     // 验证和修正参数
     const validScenarios = ['gaming', 'creator', 'office', 'allround'];
     const validCpuBrands = ['intel', 'amd', 'any'];
+    const validCpuTiers = ['entry', 'mainstream', 'highend', 'flagship', 'any'];
     const validGpuBrands = ['nvidia', 'amd', 'any'];
 
     const budget = Math.max(2000, Math.min(80000, parseInt(params.budget) || 6000));
     const scenario = validScenarios.includes(params.scenario) ? params.scenario : 'allround';
     const cpuBrand = validCpuBrands.includes(params.cpuBrand) ? params.cpuBrand : 'any';
+    const cpuTier = validCpuTiers.includes(params.cpuTier) ? params.cpuTier : 'any';
     const gpuBrand = validGpuBrands.includes(params.gpuBrand) ? params.gpuBrand : 'any';
     const notes = params.notes || '';
 
@@ -2335,11 +2339,12 @@ async function aiGenerate() {
     });
 
     // 生成配置单
-    const build = generateBuild(budget, scenario, cpuBrand, gpuBrand);
+    const build = generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier);
     state.currentBuild = build;
     renderResult(build);
 
     let statusText = 'AI识别：预算¥' + budget.toLocaleString() + '，' + getScenarioName(scenario);
+    if (cpuTier !== 'any') statusText += '，CPU:' + getCpuTierName(cpuTier);
     if (notes) statusText += '，备注：' + notes;
     setAIStatus(statusText, 'success');
 
@@ -2367,6 +2372,11 @@ function translateAIError(msg) {
 function getScenarioName(scenario) {
   const names = { gaming: '游戏娱乐', creator: '设计渲染', office: '办公学习', allround: '综合家用' };
   return names[scenario] || scenario;
+}
+
+function getCpuTierName(tier) {
+  const names = { entry: 'i3级别', mainstream: 'i5级别', highend: 'i7级别', flagship: 'i9级别' };
+  return names[tier] || tier;
 }
 
 // 价格管理面板
@@ -2471,7 +2481,7 @@ function pickBestUnderBudget(candidates, budget) {
   return affordable.sort((a, b) => b.price - a.price)[0];
 }
 
-function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
+function generateBuild(budget, scenario, cpuBrand, gpuBrand, cpuTier = 'any') {
   const build = {};
   let remaining = budget;
 
@@ -2487,7 +2497,7 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
   // 判断是否需要核显（办公场景低预算不配独显，必须用带核显的CPU）
   const needIGPU = scenario === 'office' && budget < 4500;
 
-  // 1. 选 CPU —— 预算内选最贵的
+  // 1. 选 CPU —— 预算内选最贵的，支持指定档次
   const cpuBudget = budget * ratio.cpu;
   let cpuCandidates = DB.cpus.filter(c => {
     if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
@@ -2495,6 +2505,22 @@ function generateBuild(budget, scenario, cpuBrand, gpuBrand) {
     if (scenario === 'gaming' && c.tier === 'flagship') return false; // 游戏场景不选旗舰CPU，U7/i7足够
     return c.price <= cpuBudget * 1.15; // 放宽15%，后面配件可以省回来
   });
+  // 如果指定了CPU档次，优先选对应档次
+  if (cpuTier && cpuTier !== 'any') {
+    const tierMatched = cpuCandidates.filter(c => c.tier === cpuTier);
+    if (tierMatched.length > 0) {
+      cpuCandidates = tierMatched;
+    } else {
+      // 预算内没有对应档次，放宽预算限制再找
+      const tierAll = DB.cpus.filter(c => {
+        if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
+        if (needIGPU && !c.igpu) return false;
+        if (scenario === 'gaming' && c.tier === 'flagship') return false;
+        return c.tier === cpuTier;
+      });
+      if (tierAll.length > 0) cpuCandidates = tierAll;
+    }
+  }
   if (cpuCandidates.length === 0) {
     cpuCandidates = DB.cpus.filter(c => {
       if (cpuBrand !== 'any' && c.brand !== cpuBrand) return false;
